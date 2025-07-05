@@ -1,0 +1,60 @@
+livedebugging {
+  enabled = true
+}
+
+logging {
+  level = "info"
+  write_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "${LOKI_URL}"
+  }
+}
+
+loki.source.journal "read_journal" {
+  max_age = "24h"
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.source.file "varlog" {
+  targets = [{
+    path = "/var/log/**/*.log",
+    labels = {
+      job  = "varlog",
+      host = "${HOSTNAME}",
+    },
+  }]
+  forward_to = [loki.write.default.receiver]
+}
+
+// Define relabeling rules for systemd journal logs
+discovery.relabel "journal_relabel_rules" {
+  targets = []
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+
+  rule {
+    source_labels = ["__journal__boot_id"]
+    target_label  = "boot_id"
+  }
+
+  rule {
+    source_labels = ["__journal__transport"]
+    target_label  = "transport"
+  }
+
+  rule {
+    source_labels = ["__journal__hostname"]
+    target_label  = "instance"
+  }
+
+  rule {
+    source_labels = ["__journal_priority_keyword"]
+    target_label  = "level"
+  }
+}
