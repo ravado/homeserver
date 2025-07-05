@@ -61,7 +61,7 @@ while true; do
 done
 
 echo "⬇️ Downloading Alloy config template..."
-sudo curl -fsSL https://raw.githubusercontent.com/ravado/homeserver/refs/heads/main/logs-and-monitoring/default_config_alloy.sh -o /etc/alloy/config.alloy
+sudo curl -fsSL https://raw.githubusercontent.com/ravado/homeserver/refs/heads/main/logs-and-monitoring/default_config.alloy -o /etc/alloy/config.alloy
 
 echo "✏️ Replacing Loki URL placeholder with provided value..."
 sudo sed -i "s|\${LOKI_URL}|${loki_url}|g" /etc/alloy/config.alloy
