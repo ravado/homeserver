@@ -5,6 +5,14 @@ set -e
 echo "🔧 Updating package database..."
 sudo apt update
 
+# Check if curl is installed
+if ! command -v curl &> /dev/null; then
+  echo "📥 Installing curl..."
+  sudo apt install curl -y
+else
+  echo "✅ curl is already installed."
+fi
+
 # Check if gpg is installed
 if ! command -v gpg &> /dev/null; then
   echo "🔑 Installing GPG..."
@@ -44,21 +52,25 @@ else
   echo "✅ Alloy is already installed."
 fi
 
-# Prompt for Loki URL with validation
+# Prompt for Loki host (IP/domain + optional port)
 while true; do
-  echo "🌐 Please enter your Loki URL (e.g. http://192.168.91.107:3100/loki/api/v1/push):"
-  read loki_url
+  echo "🌐 Please enter your Loki IP or domain (with optional port, e.g. 192.168.91.107:3100):"
+  read loki_host
 
-  # Basic validation for non-empty and starts with http
-  if [[ -z "$loki_url" ]]; then
-    echo "❌ URL cannot be empty. Please try again."
-  elif [[ ! "$loki_url" =~ ^http ]]; then
-    echo "❌ URL must start with http or https. Please try again."
+  if [[ -z "$loki_host" ]]; then
+    echo "❌ Host cannot be empty. Please try again."
   else
-    echo "✅ Loki URL set to: $loki_url"
     break
   fi
 done
+
+# Prompt for protocol with default http
+read -rp "🔒 Enter protocol (http or https) [http]: " loki_proto
+loki_proto=${loki_proto:-http}
+
+# Form final URL
+loki_url="${loki_proto}://${loki_host}/loki/api/v1/push"
+echo "✅ Loki URL set to: $loki_url"
 
 echo "⬇️ Downloading Alloy config template..."
 sudo curl -fsSL https://raw.githubusercontent.com/ravado/homeserver/refs/heads/main/logs-and-monitoring/default_config.alloy -o /etc/alloy/config.alloy
