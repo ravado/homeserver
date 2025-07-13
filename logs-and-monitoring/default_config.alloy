@@ -17,7 +17,7 @@ loki.write "default" {
 }
 
 // Читатимемо журнал логів системи
-loki.source.journal "loki.source.journal" {
+loki.source.journal "loki_source_journal" {
   max_age = "24h"
   labels = {
     job = "journal_logs",
