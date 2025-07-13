@@ -82,7 +82,7 @@ echo "🧪 Validating configuration..."
 sudo alloy validate /etc/alloy/config.alloy
 
 echo "🔄 Restarting and enabling Alloy service..."
-sudo systemctl restart alloy
+# sudo systemctl restart alloy
 sudo systemctl enable --now alloy
 
 echo "✅ Alloy installation and configuration completed successfully!"

@@ -1,35 +1,44 @@
 livedebugging {
-  enabled = true
+  enabled = false
 }
 
+// Рівень логування Alloy (які саме логи віправлятиме сам Alloy)
+// Можливі значення: "debug", "info", "warn", "error
 logging {
   level = "info"
   write_to = [loki.write.default.receiver]
 }
 
+// Куди відправлятимемо логи
 loki.write "default" {
   endpoint {
     url = "${LOKI_URL}"
   }
 }
 
-loki.source.journal "read_journal" {
+// Читатимемо журнал логів системи
+loki.source.journal "loki.source.journal" {
   max_age = "24h"
+  labels = {
+    job = "journal_logs",
+  }
+  relabel_rules = discovery.relabel.journal_relabel_rules.rules
   forward_to = [loki.write.default.receiver]
 }
 
-loki.source.file "varlog" {
-  targets = [{
-    path = "/var/log/**/*.log",
-    labels = {
-      job  = "varlog",
-      host = "${HOSTNAME}",
-    },
-  }]
-  forward_to = [loki.write.default.receiver]
-}
+// Читатимемо логи з файлів
+// loki.source.file "varlog" {
+//   targets = [{
+//     path = "/var/log/**/*.log",
+//     labels = {
+//       job  = "varlog",
+//       host = "${HOSTNAME}",
+//     },
+//   }]
+//   forward_to = [loki.write.default.receiver]
+// }
 
-// Define relabeling rules for systemd journal logs
+// Замінюємо системні лейбли на більш зрозумілі
 discovery.relabel "journal_relabel_rules" {
   targets = []
 
