@@ -76,7 +76,7 @@ while true; do
   fi
 done
 
-# Use fixed API paths
+# Build full URLs with fixed API paths
 loki_url="http://${loki_host}:3100/loki/api/v1/push"
 prometheus_url="http://${prometheus_host}:9090/api/v1/write"
 
@@ -88,7 +88,7 @@ sudo curl -fsSL https://raw.githubusercontent.com/ravado/homeserver/refs/heads/m
 
 echo "✏️ Replacing placeholders in config..."
 sudo sed -i "s|\${LOKI_URL}|${loki_url}|g" /etc/alloy/config.alloy
-sudo sed -i "s|\${PROMETHEUS_URL}|${prometheus_host}|g" /etc/alloy/config.alloy
+sudo sed -i "s|\${PROMETHEUS_URL}|${prometheus_url}|g" /etc/alloy/config.alloy
 
 echo "🧪 Validating configuration..."
 sudo alloy validate /etc/alloy/config.alloy
