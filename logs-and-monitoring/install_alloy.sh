@@ -52,37 +52,48 @@ else
   echo "✅ Alloy is already installed."
 fi
 
-# Prompt for Loki host (IP/domain + optional port)
+# Prompt for Loki host
 while true; do
-  echo "🌐 Please enter your Loki IP or domain (with optional port, e.g. 192.168.91.107:3100):"
+  echo "🌐 Please enter your Loki IP or domain (e.g. 192.168.91.10):"
   read loki_host
 
   if [[ -z "$loki_host" ]]; then
-    echo "❌ Host cannot be empty. Please try again."
+    echo "❌ Loki host cannot be empty. Please try again."
   else
     break
   fi
 done
 
-# Prompt for protocol with default http
-read -rp "🔒 Enter protocol (http or https) [http]: " loki_proto
-loki_proto=${loki_proto:-http}
+# Prompt for Prometheus host
+while true; do
+  echo "🌐 Please enter your Prometheus IP or domain (e.g. 192.168.91.10):"
+  read prometheus_host
 
-# Form final URL
-loki_url="${loki_proto}://${loki_host}/loki/api/v1/push"
+  if [[ -z "$prometheus_host" ]]; then
+    echo "❌ Prometheus host cannot be empty. Please try again."
+  else
+    break
+  fi
+done
+
+# Use fixed API paths
+loki_url="http://${loki_host}:3100/loki/api/v1/push"
+prometheus_url="http://${prometheus_host}:9090/api/v1/write"
+
 echo "✅ Loki URL set to: $loki_url"
+echo "✅ Prometheus URL set to: $prometheus_url"
 
 echo "⬇️ Downloading Alloy config template..."
 sudo curl -fsSL https://raw.githubusercontent.com/ravado/homeserver/refs/heads/main/logs-and-monitoring/default_config.alloy -o /etc/alloy/config.alloy
 
-echo "✏️ Replacing Loki URL placeholder with provided value..."
+echo "✏️ Replacing placeholders in config..."
 sudo sed -i "s|\${LOKI_URL}|${loki_url}|g" /etc/alloy/config.alloy
+sudo sed -i "s|\${PROMETHEUS_URL}|${prometheus_host}|g" /etc/alloy/config.alloy
 
 echo "🧪 Validating configuration..."
 sudo alloy validate /etc/alloy/config.alloy
 
 echo "🔄 Restarting and enabling Alloy service..."
-# sudo systemctl restart alloy
 sudo systemctl enable --now alloy
 
 echo "✅ Alloy installation and configuration completed successfully!"

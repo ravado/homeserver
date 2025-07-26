@@ -1,3 +1,4 @@
+// Увімкнення або вимкнення веб-інтерфейсу живого дебагу Alloy
 livedebugging {
   enabled = false
 }
@@ -16,7 +17,7 @@ loki.write "default" {
   }
 }
 
-// Читатимемо журнал логів системи
+// Читатимемо журнал логів системи (systemd journal)
 loki.source.journal "loki_source_journal" {
   max_age = "24h"
   labels = {
@@ -26,7 +27,7 @@ loki.source.journal "loki_source_journal" {
   forward_to = [loki.write.default.receiver]
 }
 
-// Читатимемо логи з файлів
+// Приклад читання всіх .log файлів
 // loki.source.file "varlog" {
 //   targets = [{
 //     path = "/var/log/**/*.log",
@@ -38,7 +39,19 @@ loki.source.journal "loki_source_journal" {
 //   forward_to = [loki.write.default.receiver]
 // }
 
-// Замінюємо системні лейбли на більш зрозумілі
+// Приклад читання конкретного файлу auth.log
+// loki.source.file "authlog" {
+//   targets = [{
+//     path = "/var/log/auth.log",
+//     labels = {
+//       job  = "auth_logs",
+//       host = "${HOSTNAME}",
+//     },
+//   }]
+//   forward_to = [loki.write.default.receiver]
+// }
+
+// Правила для перемаркування логів journal
 discovery.relabel "journal_relabel_rules" {
   targets = []
 
@@ -46,24 +59,69 @@ discovery.relabel "journal_relabel_rules" {
     source_labels = ["__journal__systemd_unit"]
     target_label  = "unit"
   }
-
   rule {
     source_labels = ["__journal__boot_id"]
     target_label  = "boot_id"
   }
-
   rule {
     source_labels = ["__journal__transport"]
     target_label  = "transport"
   }
-
   rule {
     source_labels = ["__journal__hostname"]
     target_label  = "instance"
   }
-
   rule {
     source_labels = ["__journal_priority_keyword"]
     target_label  = "level"
+  }
+}
+
+// Правила для маркування метрик
+discovery.relabel "metrics_relabel" {
+  targets = prometheus.exporter.unix.node.targets
+
+  rule {
+    target_label = "instance"
+    replacement  = constants.hostname
+  }
+
+  rule {
+    target_label = "job"
+    replacement  = "linux_node"
+  }
+}
+
+// Експортер системних метрик (аналог node_exporter)
+prometheus.exporter.unix "node" {
+  disable_collectors = ["ipvs", "btrfs", "infiniband", "xfs", "zfs"]
+  enable_collectors  = ["meminfo"]
+
+  filesystem {
+    fs_types_exclude     = "^(autofs|binfmt_misc|...)$"
+    mount_points_exclude = "^/(dev|proc|run/credentials/.+|...)($|/)"
+    mount_timeout        = "5s"
+  }
+
+  netclass {
+    ignored_devices = "^(veth.*|cali.*|[a-f0-9]{15})$"
+  }
+
+  netdev {
+    device_exclude = "^(veth.*|cali.*|[a-f0-9]{15})$"
+  }
+}
+
+// Scrape метрик і відправка на Prometheus
+prometheus.scrape "node" {
+  scrape_interval = "15s"
+  targets    = discovery.relabel.metrics_relabel.output
+  forward_to = [prometheus.remote_write.local.receiver]
+}
+
+// Куди саме надсилати метрики (Prometheus Remote Write)
+prometheus.remote_write "local" {
+  endpoint {
+    url = "${PROMETHEUS_URL}"
   }
 }
