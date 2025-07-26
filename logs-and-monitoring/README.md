@@ -7,8 +7,7 @@
 Запустіть наступні команди на Debian-подібній системі (Ubuntu, Raspberry Pi OS, Proxmox CT тощо):
 
 ```bash
-sudo apt update
-sudo apt install -y curl
+sudo apt update && sudo apt install -y curl
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/ravado/homeserver/refs/heads/main/logs-and-monitoring/install_alloy.sh)"
 ```
 
